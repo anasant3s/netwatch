@@ -14,11 +14,12 @@ import (
 
 	"netwatch-api/internal/models"
 	"netwatch-api/internal/repository"
+	"netwatch-api/internal/services"
 )
 
-// API groups the HTTP handlers and device storage.
 type API struct {
-	store *repository.DeviceRepository
+	store      *repository.DeviceRepository
+	monitoring *services.MonitoringService
 }
 
 // writeJSON sends a JSON response with the given HTTP status.
@@ -192,7 +193,6 @@ func checkTCPConnection(ip string, port int) bool {
 	return true
 }
 
-// GET /api/devices/{id}/status
 func (api *API) checkDeviceStatus(w http.ResponseWriter, r *http.Request) {
 	deviceID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil || deviceID < 1 {
@@ -200,32 +200,22 @@ func (api *API) checkDeviceStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	selectedDevice, found := api.store.GetByID(deviceID)
-	if !found {
+	device, err := api.monitoring.CheckDeviceStatus(deviceID)
+	if errors.Is(err, services.ErrDeviceNotFound) {
 		writeError(w, http.StatusNotFound, "device not found")
 		return
 	}
 
-	// Check TCP connectivity outside the repository lock.
-	isReachable := checkTCPConnection(selectedDevice.IP, selectedDevice.Port)
-
-	status := "offline"
-	if isReachable {
-		status = "online"
-	}
-
-	// Save the latest connectivity status.
-	updated := api.store.UpdateStatus(deviceID, status)
-	if !updated {
-		writeError(w, http.StatusNotFound, "device no longer exists")
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to check device status")
 		return
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"id":     selectedDevice.ID,
-		"ip":     selectedDevice.IP,
-		"port":   selectedDevice.Port,
-		"status": status,
+		"id":     device.ID,
+		"ip":     device.IP,
+		"port":   device.Port,
+		"status": device.Status,
 	})
 }
 
@@ -249,8 +239,11 @@ func (api *API) registerRoutes() http.Handler {
 func main() {
 	deviceStore := repository.NewDeviceRepository()
 
+	monitoringService := services.NewMonitoringService(deviceStore)
+
 	api := &API{
-		store: deviceStore,
+		store:      deviceStore,
+		monitoring: monitoringService,
 	}
 
 	server := &http.Server{

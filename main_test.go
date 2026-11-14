@@ -6,14 +6,24 @@ import (
 	"net/http/httptest"
 	"netwatch-api/internal/models"
 	"netwatch-api/internal/repository"
+	"netwatch-api/internal/services"
 	"strings"
 	"testing"
 )
 
-// createTestAPI creates a fresh API for each test.
 func createTestAPI() *API {
+	deviceStore := repository.NewDeviceRepository()
+
+	monitoringService := services.NewMonitoringServiceWithChecker(
+		deviceStore,
+		func(ip string, port int) bool {
+			return true
+		},
+	)
+
 	return &API{
-		store: repository.NewDeviceRepository(),
+		store:      deviceStore,
+		monitoring: monitoringService,
 	}
 }
 
@@ -215,5 +225,37 @@ func TestDeleteDevice(t *testing.T) {
 
 	if getResponse.Code != http.StatusNotFound {
 		t.Errorf("expected status 404 after deletion, got %d", getResponse.Code)
+	}
+}
+
+func TestCheckDeviceStatus(t *testing.T) {
+	api := createTestAPI()
+
+	request := httptest.NewRequest(
+		http.MethodGet,
+		"/api/devices/1/status",
+		nil,
+	)
+
+	response := httptest.NewRecorder()
+
+	api.registerRoutes().ServeHTTP(response, request)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf(
+			"expected status %d, got %d",
+			http.StatusOK,
+			response.Code,
+		)
+	}
+
+	var result map[string]any
+
+	if err := json.NewDecoder(response.Body).Decode(&result); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	if result["status"] != "online" {
+		t.Errorf("expected device status online, got %v", result["status"])
 	}
 }
