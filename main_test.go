@@ -4,16 +4,16 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"netwatch-api/internal/models"
+	"netwatch-api/internal/repository"
 	"strings"
 	"testing"
-
-	"netwatch-api/internal/models"
 )
 
 // createTestAPI creates a fresh API for each test.
 func createTestAPI() *API {
 	return &API{
-		store: NewDeviceStore(),
+		store: repository.NewDeviceRepository(),
 	}
 }
 

@@ -1,4 +1,3 @@
-
 package repository
 
 import (
@@ -39,7 +38,6 @@ func NewDeviceRepository() *DeviceRepository {
 	}
 }
 
-
 // List returns all registered devices.
 func (r *DeviceRepository) List() []models.Device {
 	r.mu.RLock()
@@ -76,7 +74,6 @@ func (r *DeviceRepository) Create(device models.Device) models.Device {
 	return device
 }
 
-
 // Update modifies an existing device.
 func (r *DeviceRepository) Update(id int, updatedDevice models.Device) (models.Device, bool) {
 	r.mu.Lock()
@@ -86,7 +83,6 @@ func (r *DeviceRepository) Update(id int, updatedDevice models.Device) (models.D
 		if device.ID == id {
 			updatedDevice.ID = id
 			updatedDevice.Status = device.Status
-
 			r.devices[i] = updatedDevice
 
 			return updatedDevice, true
@@ -94,6 +90,21 @@ func (r *DeviceRepository) Update(id int, updatedDevice models.Device) (models.D
 	}
 
 	return models.Device{}, false
+}
+
+// UpdateStatus updates the status of a device.
+func (r *DeviceRepository) UpdateStatus(id int, status string) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	for i, device := range r.devices {
+		if device.ID == id {
+			r.devices[i].Status = status
+			return true
+		}
+	}
+
+	return false
 }
 
 // Delete removes a device by its ID.

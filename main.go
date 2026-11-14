@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"netwatch-api/internal/models"
@@ -85,14 +84,11 @@ func (api *API) healthCheck(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-
 func (api *API) listDevices(w http.ResponseWriter, r *http.Request) {
 	deviceList := api.store.List()
 
 	writeJSON(w, http.StatusOK, deviceList)
 }
-
-
 
 func (api *API) getDevice(w http.ResponseWriter, r *http.Request) {
 	deviceID, err := strconv.Atoi(r.PathValue("id"))
@@ -109,7 +105,6 @@ func (api *API) getDevice(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, device)
 }
-
 
 func (api *API) createDevice(w http.ResponseWriter, r *http.Request) {
 	var newDevice models.Device
@@ -132,8 +127,6 @@ func (api *API) createDevice(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, createdDevice)
 }
 
-
-// PUT /api/devices/{id}
 func (api *API) updateDevice(w http.ResponseWriter, r *http.Request) {
 	deviceID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil || deviceID < 1 {
@@ -153,28 +146,16 @@ func (api *API) updateDevice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	api.store.mu.Lock()
-	defer api.store.mu.Unlock()
+	updatedDevice.Name = strings.TrimSpace(updatedDevice.Name)
+	updatedDevice.Type = strings.ToLower(strings.TrimSpace(updatedDevice.Type))
 
-	for index, existingDevice := range api.store.devices {
-		if existingDevice.ID != deviceID {
-			continue
-		}
-
-		updatedDevice.ID = existingDevice.ID
-		updatedDevice.Name = strings.TrimSpace(updatedDevice.Name)
-		updatedDevice.Type = strings.ToLower(strings.TrimSpace(updatedDevice.Type))
-
-		// Preserve the last known status until connectivity is checked again.
-		updatedDevice.Status = existingDevice.Status
-
-		api.store.devices[index] = updatedDevice
-
-		writeJSON(w, http.StatusOK, updatedDevice)
+	savedDevice, found := api.store.Update(deviceID, updatedDevice)
+	if !found {
+		writeError(w, http.StatusNotFound, "device not found")
 		return
 	}
 
-	writeError(w, http.StatusNotFound, "device not found")
+	writeJSON(w, http.StatusOK, savedDevice)
 }
 
 // DELETE /api/devices/{id}
@@ -185,24 +166,13 @@ func (api *API) deleteDevice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	api.store.mu.Lock()
-	defer api.store.mu.Unlock()
-
-	for index, device := range api.store.devices {
-		if device.ID != deviceID {
-			continue
-		}
-
-		api.store.devices = append(
-			api.store.devices[:index],
-			api.store.devices[index+1:]...,
-		)
-
-		w.WriteHeader(http.StatusNoContent)
+	deleted := api.store.Delete(deviceID)
+	if !deleted {
+		writeError(w, http.StatusNotFound, "device not found")
 		return
 	}
 
-	writeError(w, http.StatusNotFound, "device not found")
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // checkTCPConnection tests whether a TCP port accepts connections.
@@ -230,27 +200,13 @@ func (api *API) checkDeviceStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	api.store.mu.RLock()
-
-	var selectedDevice models.Device
-	found := false
-
-	for _, device := range api.store.devices {
-		if device.ID == deviceID {
-			selectedDevice = device
-			found = true
-			break
-		}
-	}
-
-	api.store.mu.RUnlock()
-
+	selectedDevice, found := api.store.GetByID(deviceID)
 	if !found {
 		writeError(w, http.StatusNotFound, "device not found")
 		return
 	}
 
-	// A failed TCP connection does not always mean the device is offline.
+	// Check TCP connectivity outside the repository lock.
 	isReachable := checkTCPConnection(selectedDevice.IP, selectedDevice.Port)
 
 	status := "offline"
@@ -258,22 +214,9 @@ func (api *API) checkDeviceStatus(w http.ResponseWriter, r *http.Request) {
 		status = "online"
 	}
 
-	api.store.mu.Lock()
-
-	// The device might have been deleted during the connection test.
-	found = false
-
-	for index, device := range api.store.devices {
-		if device.ID == deviceID {
-			api.store.devices[index].Status = status
-			found = true
-			break
-		}
-	}
-
-	api.store.mu.Unlock()
-
-	if !found {
+	// Save the latest connectivity status.
+	updated := api.store.UpdateStatus(deviceID, status)
+	if !updated {
 		writeError(w, http.StatusNotFound, "device no longer exists")
 		return
 	}
@@ -304,7 +247,7 @@ func (api *API) registerRoutes() http.Handler {
 }
 
 func main() {
-	deviceStore := NewDeviceStore()
+	deviceStore := repository.NewDeviceRepository()
 
 	api := &API{
 		store: deviceStore,
