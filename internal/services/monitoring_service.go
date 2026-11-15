@@ -1,7 +1,9 @@
 package services
 
 import (
+	"context"
 	"errors"
+	"log"
 	"net"
 	"strconv"
 	"time"
@@ -12,13 +14,28 @@ import (
 
 var ErrDeviceNotFound = errors.New("device not found")
 
+const defaultCheckTimeout = 3 * time.Second
+
 type MonitoringService struct {
 	store           *repository.DeviceRepository
 	checkConnection func(ip string, port int) bool
 }
 
 func NewMonitoringService(store *repository.DeviceRepository) *MonitoringService {
-	return NewMonitoringServiceWithChecker(store, checkTCPConnection)
+	return NewMonitoringServiceWithTimeout(store, defaultCheckTimeout)
+}
+
+func NewMonitoringServiceWithTimeout(
+	store *repository.DeviceRepository,
+	timeout time.Duration,
+) *MonitoringService {
+	if timeout <= 0 {
+		timeout = defaultCheckTimeout
+	}
+
+	return NewMonitoringServiceWithChecker(store, func(ip string, port int) bool {
+		return checkTCPConnection(ip, port, timeout)
+	})
 }
 
 func NewMonitoringServiceWithChecker(
@@ -54,14 +71,61 @@ func (service *MonitoringService) CheckDeviceStatus(deviceID int) (models.Device
 	return device, nil
 }
 
+// CheckAllDevices checks the connectivity of every registered device.
+func (service *MonitoringService) CheckAllDevices() {
+	devices := service.store.List()
+
+	for _, device := range devices {
+		_, err := service.CheckDeviceStatus(device.ID)
+		if err != nil {
+			log.Printf(
+				"failed to check device %d: %v",
+				device.ID,
+				err,
+			)
+		}
+	}
+}
+
+// StartAutomaticMonitoring periodically checks all registered devices.
+func (service *MonitoringService) StartAutomaticMonitoring(
+	ctx context.Context,
+	interval time.Duration,
+) error {
+	if interval <= 0 {
+		return errors.New("monitoring interval must be greater than zero")
+	}
+
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		// Perform the first check immediately.
+		service.CheckAllDevices()
+
+		for {
+			select {
+			case <-ctx.Done():
+				log.Println("automatic monitoring stopped")
+				return
+
+			case <-ticker.C:
+				service.CheckAllDevices()
+			}
+		}
+	}()
+
+	return nil
+}
+
 // checkTCPConnection tests whether a TCP port accepts connections.
-func checkTCPConnection(ip string, port int) bool {
+func checkTCPConnection(ip string, port int, timeout time.Duration) bool {
 	address := net.JoinHostPort(ip, strconv.Itoa(port))
 
 	connection, err := net.DialTimeout(
 		"tcp",
 		address,
-		3*time.Second,
+		timeout,
 	)
 	if err != nil {
 		return false

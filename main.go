@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"netwatch-api/internal/config"
 	"netwatch-api/internal/models"
 	"netwatch-api/internal/repository"
 	"netwatch-api/internal/services"
@@ -237,9 +239,27 @@ func (api *API) registerRoutes() http.Handler {
 }
 
 func main() {
+	appConfig, err := config.Load()
+	if err != nil {
+		log.Fatalf("failed to load configuration: %v", err)
+	}
+
 	deviceStore := repository.NewDeviceRepository()
 
-	monitoringService := services.NewMonitoringService(deviceStore)
+	monitoringService := services.NewMonitoringServiceWithTimeout(
+		deviceStore,
+		appConfig.CheckTimeout,
+	)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if err := monitoringService.StartAutomaticMonitoring(
+		ctx,
+		appConfig.CheckInterval,
+	); err != nil {
+		log.Fatalf("failed to start monitoring: %v", err)
+	}
 
 	api := &API{
 		store:      deviceStore,
@@ -253,6 +273,11 @@ func main() {
 	}
 
 	fmt.Println("NetWatch API running at http://localhost:8080")
+	fmt.Printf(
+		"Automatic monitoring started (interval: %s, timeout: %s)\n",
+		appConfig.CheckInterval,
+		appConfig.CheckTimeout,
+	)
 
 	log.Fatal(server.ListenAndServe())
 }
