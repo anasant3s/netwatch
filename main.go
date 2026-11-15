@@ -21,6 +21,7 @@ import (
 
 type API struct {
 	store      *repository.DeviceRepository
+	incidents  *repository.IncidentRepository
 	monitoring *services.MonitoringService
 }
 
@@ -91,6 +92,24 @@ func (api *API) listDevices(w http.ResponseWriter, r *http.Request) {
 	deviceList := api.store.List()
 
 	writeJSON(w, http.StatusOK, deviceList)
+}
+
+func (api *API) listDeviceIncidents(w http.ResponseWriter, r *http.Request) {
+	deviceID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || deviceID < 1 {
+		writeError(w, http.StatusBadRequest, "invalid device ID")
+		return
+	}
+
+	_, found := api.store.GetByID(deviceID)
+	if !found {
+		writeError(w, http.StatusNotFound, "device not found")
+		return
+	}
+
+	incidents := api.incidents.ListByDeviceID(deviceID)
+
+	writeJSON(w, http.StatusOK, incidents)
 }
 
 func (api *API) getDevice(w http.ResponseWriter, r *http.Request) {
@@ -227,6 +246,7 @@ func (api *API) registerRoutes() http.Handler {
 
 	mux.HandleFunc("GET /api/health", api.healthCheck)
 	mux.HandleFunc("GET /api/devices", api.listDevices)
+	mux.HandleFunc("GET /api/devices/{id}/incidents", api.listDeviceIncidents)
 	mux.HandleFunc("POST /api/devices", api.createDevice)
 
 	mux.HandleFunc("GET /api/devices/{id}", api.getDevice)
@@ -245,9 +265,11 @@ func main() {
 	}
 
 	deviceStore := repository.NewDeviceRepository()
+	incidentStore := repository.NewIncidentRepository()
 
-	monitoringService := services.NewMonitoringServiceWithTimeout(
+	monitoringService := services.NewMonitoringServiceWithDependencies(
 		deviceStore,
+		incidentStore,
 		appConfig.CheckTimeout,
 	)
 
@@ -263,6 +285,7 @@ func main() {
 
 	api := &API{
 		store:      deviceStore,
+		incidents:  incidentStore,
 		monitoring: monitoringService,
 	}
 

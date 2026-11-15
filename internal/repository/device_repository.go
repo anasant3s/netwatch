@@ -121,3 +121,28 @@ func (r *DeviceRepository) Delete(id int) bool {
 
 	return false
 }
+
+// UpdateStatusIfChanged updates a device status and returns its previous status.
+func (r *DeviceRepository) UpdateStatusIfChanged(
+	id int,
+	status string,
+) (string, bool, bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	for i, device := range r.devices {
+		if device.ID == id {
+			previousStatus := device.Status
+
+			if previousStatus == status {
+				return previousStatus, false, true
+			}
+
+			r.devices[i].Status = status
+
+			return previousStatus, true, true
+		}
+	}
+
+	return "", false, false
+}
