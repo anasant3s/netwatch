@@ -1,208 +1,330 @@
 
-# NetWatch
+# NetWatch AI
 
-**Sistema de gerenciamento, monitoramento e automação de dispositivos de rede.**
+### Intelligent Network Monitoring & AI-Powered Technical Documentation
 
-## Sobre o projeto
+**NetWatch AI** é uma plataforma inteligente para monitoramento de infraestrutura de redes e consulta de documentação técnica utilizando **Inteligência Artificial**.
 
-O NetWatch é um projeto backend desenvolvido em Go (Golang), com o objetivo de solucionar uma necessidade identificada no ambiente corporativo: facilitar a visualização, o gerenciamento e o acompanhamento dos dispositivos presentes em uma infraestrutura de rede.
+A solução combina monitoramento de dispositivos, análise de disponibilidade, gerenciamento de incidentes e um assistente de IA capaz de interpretar documentos técnicos em PDF e responder perguntas com base nas informações encontradas.
 
-A proposta é desenvolver uma solução centralizada que permita consultar informações dos equipamentos, verificar sua conectividade e, futuramente, integrar esses dados a ferramentas de automação, como o n8n.
+O objetivo é centralizar informações da infraestrutura de rede em uma única plataforma, facilitando o acompanhamento dos equipamentos e o acesso ao conhecimento técnico.
 
-O projeto utiliza uma arquitetura baseada em API REST, com foco em organização do código, escalabilidade, integração entre sistemas e monitoramento de infraestrutura.
-
-## Objetivos
-
-- Centralizar informações de dispositivos de rede em uma única aplicação.
-- Facilitar a consulta e o gerenciamento de equipamentos.
-- Monitorar a conectividade dos dispositivos.
-- Identificar possíveis indisponibilidades na infraestrutura.
-- Permitir integração com ferramentas externas por meio de APIs.
-- Automatizar processos e notificações utilizando n8n.
-- Criar uma base para futuras funcionalidades de análise e monitoramento inteligente.
+---
 
 ## Funcionalidades
 
-### Implementadas / em desenvolvimento
+### 1. Monitoramento de Rede
 
-- [x] Cadastro de dispositivos de rede.
-- [x] Listagem de dispositivos cadastrados.
-- [x] Consulta individual por identificador.
-- [x] Atualização das informações dos dispositivos.
-- [x] Exclusão de dispositivos.
-- [x] Validação de endereços IP e portas.
-- [x] Verificação de conectividade por meio de conexões TCP.
-- [x] Identificação de estados de conectividade (`online`, `offline` e `unknown`).
-- [x] Respostas HTTP estruturadas em JSON.
-- [x] Controle de concorrência no armazenamento dos dados.
+A plataforma contará com um painel centralizado para acompanhamento dos dispositivos conectados à infraestrutura.
 
-### Planejadas
+- **Cadastro e gerenciamento** de dispositivos.
+- Identificação de equipamentos por **endereço IP**.
+- Monitoramento de disponibilidade.
+- Identificação de dispositivos **online e offline**.
+- Histórico de alterações de status.
+- Registro e acompanhamento de incidentes.
+- Indicadores gerais da infraestrutura.
+- **Descoberta automática** de dispositivos na rede.
 
-- [ ] Integração com n8n para criação de fluxos automatizados.
-- [ ] Notificações automáticas sobre indisponibilidade de dispositivos.
-- [ ] Armazenamento persistente em banco de dados.
-- [ ] Histórico de verificações e alterações de status.
-- [ ] Dashboard para visualização dos dispositivos e seus estados.
-- [ ] Monitoramento periódico e automatizado.
-- [ ] Exploração de recursos de inteligência artificial para análise de informações e apoio ao diagnóstico.
+### 2. Dashboard de Infraestrutura
 
-## Tecnologias e ferramentas
+Interface para visualização consolidada do ambiente monitorado.
 
-| Tecnologia | Aplicação |
-|---|---|
-| Go (Golang) | Desenvolvimento do backend |
-| API REST | Comunicação entre sistemas |
-| HTTP | Comunicação e gerenciamento de requisições |
-| JSON | Formato de troca de informações |
-| TCP Networking | Verificação de conectividade |
-| Postman | Testes e validação dos endpoints |
-| Git | Controle de versão |
-| GitHub | Versionamento e documentação |
-| n8n | Integração e automação de fluxos (planejado) |
+- Total de dispositivos cadastrados.
+- Quantidade de dispositivos online e offline.
+- Indicadores de disponibilidade.
+- Histórico de incidentes.
+- Visualização dos equipamentos monitorados.
+- Gráficos e indicadores de desempenho.
 
-### Tecnologias em estudo e expansão
+### 3. Gerenciamento de Documentação Técnica
 
-- **PostgreSQL:** persistência e organização dos dados.
-- **Docker:** containerização e organização do ambiente.
-- **Frontend:** desenvolvimento de uma interface para visualização e gerenciamento dos dispositivos.
-- **Inteligência Artificial:** exploração de recursos para análise de dados e auxílio na identificação de possíveis problemas.
+Biblioteca centralizada para armazenar e consultar documentos técnicos.
 
-## Arquitetura do projeto
+- Upload de documentos **PDF**.
+- Indexação automática do conteúdo.
+- Suporte a múltiplos documentos.
+- Organização e identificação dos arquivos.
+- Consulta de documentos indexados.
+- Reindexação de documentos atualizados.
+- Identificação das fontes utilizadas nas respostas.
 
-A aplicação está sendo organizada em camadas, buscando separar as responsabilidades e facilitar a manutenção e expansão do código.
+### 4. Assistente Técnico com Inteligência Artificial
+
+Assistente conversacional integrado ao **Google Gemini**, desenvolvido para responder perguntas técnicas utilizando informações recuperadas da documentação cadastrada.
+
+- Processamento de perguntas em linguagem natural.
+- Consulta contextualizada a documentos PDF.
+- Recuperação semântica de informações.
+- Geração de respostas com base nos documentos disponíveis.
+- Exibição das fontes e páginas utilizadas.
+- Histórico de conversas.
+- Contextualização de perguntas anteriores.
+- Tratamento de perguntas sem informações suficientes na documentação.
+
+### 5. Base de Conhecimento com RAG
+
+Implementação de uma arquitetura **RAG (Retrieval-Augmented Generation)** para conectar os documentos técnicos ao modelo de Inteligência Artificial.
+
+**Fluxo de processamento:**
+
+1. Upload do documento PDF.
+2. Extração do conteúdo textual.
+3. Divisão do conteúdo em pequenos trechos (*chunks*).
+4. Geração de embeddings.
+5. Armazenamento dos vetores no **FAISS**.
+6. Recuperação dos trechos mais relevantes para cada pergunta.
+7. Envio do contexto recuperado ao **Google Gemini**.
+8. Geração da resposta com referência às fontes utilizadas.
+
+---
+
+## Arquitetura do Projeto
+
+O projeto utiliza uma arquitetura dividida em três componentes principais:
+
+| Componente | Responsabilidade | Tecnologia |
+|---|---|---|
+| Backend | API de monitoramento de rede | Go |
+| AI Service | Processamento de documentos e IA | Python / FastAPI |
+| Frontend | Interface de interação | React |
+
+### Fluxo da Aplicação
+
+```mermaid
+flowchart TD
+    A[Usuário] --> B[Frontend React]
+    B --> C[Go API]
+    B --> D[Python AI Service]
+    C --> E[Monitoramento de dispositivos]
+    C --> F[Gerenciamento de incidentes]
+    D --> G[Processamento de PDFs]
+    G --> H[Chunking e Embeddings]
+    H --> I[FAISS]
+    D --> J[PostgreSQL]
+    I --> K[Recuperação de contexto]
+    K --> L[Google Gemini]
+    L --> B
+```
+
+---
+
+## Tecnologias Utilizadas
+
+### Backend
+
+- **Go**
+- **REST API**
+- **Python**
+- **FastAPI**
+
+### Inteligência Artificial
+
+- **Google Gemini API**
+- **Retrieval-Augmented Generation (RAG)**
+- **Embeddings**
+- **FAISS**
+- Processamento de documentos PDF
+
+### Banco de Dados e Armazenamento
+
+- **PostgreSQL**
+- **FAISS Vector Store**
+
+### Frontend
+
+- **React**
+- **Vite**
+- **Tailwind CSS**
+- **Lucide React**
+- **JavaScript**
+
+### Ferramentas
+
+- **Git**
+- **GitHub**
+- **Visual Studio Code**
+- **Swagger / OpenAPI**
+
+---
+
+## Estrutura do Projeto
 
 ```text
 netwatch-api/
 │
-├── internal/
-│   ├── models/
-│   │   └── device.go
+├── ai-service/
+│   ├── app/
+│   │   ├── core/
+│   │   ├── repositories/
+│   │   ├── routes/
+│   │   ├── schemas/
+│   │   └── services/
 │   │
-│   ├── repository/
-│   │   └── device_repository.go
-│   │
-│   ├── handlers/
-│   │
-│   ├── services/
-│   │
-│   └── database/
+│   ├── storage/
+│   ├── .env.example
+│   └── requirements.txt
 │
-├── main.go
-├── main_test.go
-└── go.mod
+├── frontend/
+│   ├── src/
+│   │   ├── services/
+│   │   ├── App.jsx
+│   │   └── index.css
+│   │
+│   ├── public/
+│   └── package.json
+│
+├── internal/
+│   ├── handlers/
+│   ├── models/
+│   ├── repository/
+│   └── services/
+│
+├── .gitignore
+└── README.md
 ```
 
-**Responsabilidades das camadas:**
+---
 
-- `models`: definição das estruturas e entidades utilizadas pela aplicação.
-- `repository`: gerenciamento e acesso aos dados dos dispositivos.
-- `handlers`: tratamento das requisições HTTP.
-- `services`: implementação das regras de negócio.
-- `database`: futura integração e configuração do banco de dados.
-- `main.go`: inicialização da aplicação e configuração do servidor.
+## API
 
-A estrutura está em evolução e será ampliada conforme novas funcionalidades forem implementadas.
-
-## API Endpoints
-
-A API utiliza o prefixo `/api`.
+### Go API
 
 | Método | Endpoint | Descrição |
 |---|---|---|
-| GET | `/api/health` | Verifica a disponibilidade da API |
-| GET | `/api/devices` | Lista os dispositivos |
-| GET | `/api/devices/{id}` | Consulta um dispositivo |
-| POST | `/api/devices` | Cadastra um dispositivo |
-| PUT | `/api/devices/{id}` | Atualiza um dispositivo |
-| DELETE | `/api/devices/{id}` | Exclui um dispositivo |
-| GET | `/api/devices/{id}/status` | Verifica a conectividade de um dispositivo |
+| GET | `/api/health` | Verificar disponibilidade da API |
+| GET | `/api/devices` | Listar dispositivos |
+| GET | `/api/devices/{id}` | Consultar dispositivo |
+| GET | `/api/devices/{id}/status` | Consultar status |
+| GET | `/api/devices/{id}/incidents` | Consultar incidentes |
 
-## Monitoramento de conectividade
+### Python AI Service
 
-O projeto utiliza conexões TCP para verificar se uma porta específica de determinado dispositivo aceita conexões.
+| Método | Endpoint | Descrição |
+|---|---|---|
+| GET | `/api/health` | Verificar disponibilidade do serviço |
+| POST | `/api/documents/upload` | Enviar e indexar documento PDF |
+| POST | `/api/documents/ask` | Enviar pergunta ao assistente |
+| GET | `/api/documents/conversations` | Listar conversas |
+| GET | `/api/documents/conversations/{conversation_id}` | Consultar conversa |
 
-A verificação considera o endereço IP e a porta configurada para cada equipamento.
+A documentação interativa da API Python está disponível pelo **Swagger**:
 
-Os estados utilizados são:
+`http://localhost:8000/docs`
 
-- `online`: conexão TCP estabelecida.
-- `offline`: conexão TCP não estabelecida.
-- `unknown`: conectividade ainda não verificada.
+---
 
-**Observação:** uma falha na conexão TCP não significa necessariamente que o equipamento esteja desligado. A porta pode estar bloqueada, filtrada ou com algum serviço indisponível.
-
-## Integração planejada com n8n
-
-Uma das propostas de expansão do NetWatch API é sua integração com o n8n, plataforma de automação de workflows.
-
-A integração permitirá utilizar os dados disponibilizados pela API para construir processos automatizados.
-
-### Exemplo de fluxo futuro
-
-1. O n8n inicia uma execução em um intervalo configurado.
-2. Realiza uma requisição HTTP ao NetWatch API.
-3. Consulta os dispositivos cadastrados e seus estados.
-4. Identifica dispositivos que apresentem indisponibilidade.
-5. Executa uma ação automatizada, como enviar uma notificação.
-
-Essa integração poderá reduzir a necessidade de consultas manuais e facilitar o acompanhamento da infraestrutura.
-
-## Como executar o projeto
+## Como Executar
 
 ### Pré-requisitos
 
-- Go instalado.
-- Git instalado.
-- Postman (opcional, para testar a API).
+- **Go** instalado.
+- **Python 3.12** ou superior.
+- **Node.js e npm**.
+- **PostgreSQL**.
+- Chave de API do **Google Gemini**.
 
-### Clonar o repositório
-
-```bash
-git clone URL_DO_REPOSITORIO
-```
-
-### Acessar a pasta
+### 1. Clonar o Repositório
 
 ```bash
+git clone https://github.com/SEU-USUARIO/netwatch-api.git
 cd netwatch-api
 ```
 
-### Executar a aplicação
+### 2. Configurar o Serviço de IA
+
+```bash
+cd ai-service
+
+python -m venv .venv
+```
+
+Ativar o ambiente virtual no Windows:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+Instalar dependências:
+
+```bash
+pip install -r requirements.txt
+```
+
+Configurar as variáveis de ambiente conforme o arquivo **.env.example**, incluindo a conexão com PostgreSQL e a chave da API Gemini.
+
+Iniciar o serviço:
+
+```bash
+python -m uvicorn app.main:app --reload
+```
+
+### 3. Executar o Frontend
+
+Em outro terminal:
+
+```bash
+cd frontend
+
+npm install
+npm run dev
+```
+
+O frontend estará disponível em:
+
+`http://localhost:5173`
+
+### 4. Executar a API Go
+
+Na raiz do projeto:
 
 ```bash
 go run .
 ```
 
-A API estará disponível em:
+Ajuste o comando conforme o ponto de entrada da aplicação, caso necessário.
 
-```text
-http://localhost:8080
-```
+---
 
-### Verificar se está funcionando
+## Roadmap
 
-```http
-GET http://localhost:8080/api/health
-```
+O projeto está em desenvolvimento e possui as seguintes etapas:
 
-Resposta esperada:
+### Implementado
 
-```json
-{
-  "status": "ok"
-}
-```
+- [x] Estrutura inicial da API em Go.
+- [x] Endpoints de gerenciamento de dispositivos.
+- [x] Estrutura inicial do serviço Python com FastAPI.
+- [x] Integração com Google Gemini.
+- [x] Configuração do PostgreSQL.
+- [x] Processamento e indexação de PDFs.
+- [x] Geração de embeddings.
+- [x] Recuperação semântica com FAISS.
+- [x] Assistente técnico com RAG.
+- [x] Histórico de conversas no backend.
+- [x] Interface inicial em React.
+- [x] Integração inicial entre frontend e serviço de IA.
 
-## Testes
+### Em Desenvolvimento e Planejado
 
-Os endpoints podem ser testados utilizando o Postman, permitindo enviar requisições HTTP, configurar parâmetros, encaminhar dados JSON e verificar os códigos de resposta da API.
+- [ ] Upload de PDFs diretamente pela interface.
+- [ ] Biblioteca de documentos com gerenciamento completo.
+- [ ] Histórico de conversas integrado à interface.
+- [ ] Dashboard de monitoramento.
+- [ ] Descoberta automática de dispositivos na rede.
+- [ ] Monitoramento contínuo de disponibilidade.
+- [ ] Histórico e visualização de incidentes.
+- [ ] Integração entre monitoramento e assistente de IA.
+- [ ] Melhorias de segurança, observabilidade e experiência do usuário.
 
-Os testes automatizados são desenvolvidos utilizando o pacote `testing` da própria linguagem Go.
+---
 
-## Status do projeto
+## Objetivo
 
-**Em desenvolvimento.**
+O **NetWatch AI** busca demonstrar a aplicação prática de desenvolvimento backend, integração entre serviços, bancos de dados, monitoramento de redes e Inteligência Artificial.
 
-O projeto está sendo construído de forma incremental, com implementação das funcionalidades principais, organização da arquitetura e planejamento das integrações futuras.
+A proposta é desenvolver uma solução que una **infraestrutura de redes e IA generativa**, permitindo que informações técnicas sejam consultadas de forma mais rápida, organizada e contextualizada.
 
+---
 
+**Status:** Em desenvolvimento.
