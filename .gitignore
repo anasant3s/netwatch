@@ -1,0 +1,38 @@
+
+# Environment variables
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+**/.venv/
+**/venv/
+
+# Node.js
+node_modules/
+**/node_modules/
+frontend/dist/
+
+# FAISS generated files
+ai-service/storage/faiss/
+*.index
+*.ids.npy
+
+# IDE and operating system
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
